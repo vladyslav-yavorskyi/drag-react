@@ -1,72 +1,21 @@
-import { useEffect, useRef, useState } from 'react';
-import useMousePosition from './hooks/useMousePosition';
-
-interface Position {
-  x: number;
-  y: number;
-}
+import useTransform from './hooks/useTransform';
 
 function App() {
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState<Position>({ x: 0, y: 0 });
-  const [position, setPosition] = useState<Position>({ x: 0, y: 0 });
-  const containerRef = useRef<HTMLDivElement>(null);
-  const innerDivRef = useRef<HTMLDivElement>(null);
   const containerSize = { width: 700, height: 500 };
-  const innerDivSize = { width: 50, height: 50 };
-  const cursor = useMousePosition();
+  const innerDivSize = { width: 100, height: 100 };
 
-  const handleMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
-    setIsDragging(true);
-
-    const box = event.currentTarget;
-
-    const i1 = cursor.x - box.offsetLeft;
-    const h1 = cursor.y - box.offsetTop;
-
-    setDragOffset({ x: i1, y: h1 });
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  const handleMouseMove = () => {
-    if (isDragging) {
-      const x = cursor.x - dragOffset.x;
-      const y = cursor.y - dragOffset.y;
-
-      const maxX = containerSize.width - innerDivSize.width;
-      const maxY = containerSize.height - innerDivSize.height;
-      setPosition({
-        x: Math.max(0, Math.min(maxX, x)),
-        y: Math.max(0, Math.min(maxY, y)),
-      });
-    }
-  };
-
-  useEffect(() => {
-    const handleMouseOutsideDiv = (event: MouseEvent) => {
-      if (
-        isDragging &&
-        containerRef.current &&
-        !innerDivRef.current?.contains(event.target as Node)
-      ) {
-        setIsDragging(false);
-      }
-    };
-
-    document.addEventListener('mousemove', handleMouseOutsideDiv);
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseOutsideDiv);
-    };
-  }, [isDragging]);
+  const {
+    handleMouseDown,
+    handleMouseMove,
+    handleMouseUp,
+    position,
+    rotationAngle,
+  } = useTransform({ containerSize, innerDivSize });
 
   return (
     <div
-      ref={containerRef}
       onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -76,7 +25,6 @@ function App() {
       }}
     >
       <div
-        ref={innerDivRef}
         style={{
           width: `${containerSize.width}px`,
           height: `${containerSize.height}px`,
@@ -86,17 +34,32 @@ function App() {
       >
         <div
           onMouseDown={handleMouseDown}
-          onMouseUp={handleMouseUp}
           style={{
             width: `${innerDivSize.width}px`,
             height: `${innerDivSize.height}px`,
             position: 'absolute',
             backgroundColor: 'blue',
             cursor: 'pointer',
-            left: `${position.x}px`,
             top: `${position.y}px`,
+            left: `${position.x}px`,
+            transform: `rotate(${rotationAngle}deg) `,
+            transition: 'transform 0.3s ease',
+            display: 'flex',
+            justifyContent: 'center',
           }}
-        ></div>
+        >
+          <div
+            onMouseDown={handleMouseDown}
+            className="rotation-handle"
+            style={{
+              borderRadius: '100%',
+              width: '15px',
+              height: '15px',
+              backgroundColor: 'white',
+              marginTop: '4px',
+            }}
+          ></div>
+        </div>
       </div>
     </div>
   );
